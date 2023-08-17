@@ -1,0 +1,16 @@
+#JWT secret
+JWT_SECRET: somesecret
+
+#Database:
+MYSQL_USERNAME: root
+MYSQL_PASSWORD: 1201991n
+MYSQL_HOST: localhost
+MYSQL_PORT: 3306
+MYSQL_DATABASE: url_shortening_app
+
+#Server config
+CONTAINER_PORT: 8080
+ACTIVE_PROFILE: dev
+
+#Email config
+
