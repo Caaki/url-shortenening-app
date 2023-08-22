@@ -24,7 +24,7 @@ spring:
     properties:
       hibernate:
         globally_quoted_indentifiers: true
-        dialect: org.hibernate.dialect.MYSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
   sql:
     init:
