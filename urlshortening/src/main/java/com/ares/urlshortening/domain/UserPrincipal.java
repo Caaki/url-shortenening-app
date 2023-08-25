@@ -23,6 +23,11 @@ public class UserPrincipal implements UserDetails {
         //return AuthorityUtils.commaSeparatedStringToAuthorityList(permissions);
         return stream(permissions.split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
     }
+
+    public User getUser() {
+        return user;
+    }
+
     @Override
     public String getPassword() {
         return this.user.getPassword();

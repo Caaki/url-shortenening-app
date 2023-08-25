@@ -12,8 +12,12 @@ public class RoleQuery {
 
     public static final String SELECT_ROLE_BY_USER_ID_QUERY=
             "SELECT r.id, r.name, r.permission FROM Roles r " +
-            "JOIN UserRole ur ON ur.role_id = r.id " +
-            "JOIN Users u ON u.id = ur.user_id WHERE u.id = :userId";
-
+            "JOIN UserRole ur ON r.id = ur.role_id " +
+            "JOIN Users u ON ur.user_id = u.id " +
+            "WHERE u.id = :userId";
+//          "SELECT r.id, r.name, r.permission FROM Roles r " +
+//          "JOIN UserRole ur ON ur.role_id = r.id " +
+//          "JOIN Users u ON u.id = ur.user_id " +
+//          "WHERE u.id = :userId";
 
 }

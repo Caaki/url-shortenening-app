@@ -26,4 +26,19 @@ public class UserQuery {
             "DELETE FROM TwoFactorVerifications " +
             "WHERE user_id = :userId";
 
+    public static final String SELECT_USER_BY_ID_QUERY =
+            "SELECT * FROM Users " +
+            "WHERE id = :userId";
+
+
+    public static final String SELECT_USER_BY_USER_CODE_QUERY =
+            "SELECT * FROM Users " +
+            "WHERE id = (SELECT user_id FROM TwoFactorVerifications WHERE code = :code)";
+
+    public static final String IS_VERIFICATION_CODE_EXPIRED_BY_CODE =
+            "SELECT expiration_date < NOW() " +
+            "FROM TwoFactorVerifications " +
+            "WHERE code = :code";
+
+
 }

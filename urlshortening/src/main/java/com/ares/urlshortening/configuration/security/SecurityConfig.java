@@ -1,5 +1,6 @@
 package com.ares.urlshortening.configuration.security;
 
+import com.ares.urlshortening.configuration.filter.CustomAuthorizationFilter;
 import com.ares.urlshortening.handler.CustomAccessDeniedHandler;
 import com.ares.urlshortening.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import static com.ares.urlshortening.constants.Constants.PUBLIC_URLS;
 
@@ -29,7 +31,7 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler deniedHandler;
     private final CustomAuthenticationEntryPoint entryPoint;
     private final UserDetailsService userDetailsService;
-
+    private final CustomAuthorizationFilter filter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
@@ -43,6 +45,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(request-> request.requestMatchers(HttpMethod.DELETE,"/url/delete/**").hasAuthority("DELETE:URL"));
         http.exceptionHandling(exception ->exception.accessDeniedHandler(deniedHandler).authenticationEntryPoint(entryPoint));
         http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
+        http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
