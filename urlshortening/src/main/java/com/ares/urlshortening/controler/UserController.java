@@ -9,6 +9,7 @@ import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import com.ares.urlshortening.forms.LoginForm;
 import com.ares.urlshortening.service.RoleService;
 import com.ares.urlshortening.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.Map;
 
-import static com.ares.urlshortening.utils.UserUtils.getAuthenticatedUser;
 import static java.time.LocalDateTime.now;
 
 @RestController
@@ -55,15 +55,16 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<HttpResponse> saveUser(Authentication authentication){
-        System.out.println(authentication);
+        System.out.println(authentication.getPrincipal());
+        System.out.println(authentication.getName());
         UserDTO userDto = userService.getUserById(Long.valueOf(authentication.getName()));
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",userDto))
                         .message("Profile works")
-                        .status(HttpStatus.CREATED)
-                        .statusCode(HttpStatus.CREATED.value())
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
                         .build()
         );
     }
@@ -87,6 +88,19 @@ public class UserController {
                                 "refresh_token",tokenProvider.createRefreshToken(getUserPrincipal(userDto))))
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @RequestMapping("/error")
+    public ResponseEntity<HttpResponse> handleError(HttpServletRequest request){
+
+        return ResponseEntity.badRequest().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason("There is no mapping for a "+ request.getMethod() + " request on this path")
+                        .status(HttpStatus.BAD_REQUEST)
+                        .statusCode(HttpStatus.BAD_REQUEST.value())
                         .build()
         );
     }

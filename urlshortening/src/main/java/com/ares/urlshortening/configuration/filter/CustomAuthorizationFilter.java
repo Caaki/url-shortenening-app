@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.ares.urlshortening.constants.Constants.*;
+import static com.ares.urlshortening.utils.ExceptionUtils.processError;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -45,7 +46,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request,response);
         }catch (Exception e ){
             log.error(e.getMessage());
-            //processError(request,request,e);
+            processError(request,response,e);
         }
 
     }
