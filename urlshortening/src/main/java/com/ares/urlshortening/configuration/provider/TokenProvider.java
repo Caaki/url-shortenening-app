@@ -88,7 +88,7 @@ public String createRefreshToken(UserPrincipal userPrincipal){
 
 
     public Authentication getAuthentication(Long userId, List<GrantedAuthority> authorities, HttpServletRequest request){
-        UsernamePasswordAuthenticationToken usernamePasswordAuthToken = new UsernamePasswordAuthenticationToken((userId),null, authorities);
+        UsernamePasswordAuthenticationToken usernamePasswordAuthToken = new UsernamePasswordAuthenticationToken(userService.getUserById(userId),null, authorities);
         usernamePasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return usernamePasswordAuthToken;
     }
@@ -105,6 +105,7 @@ public String createRefreshToken(UserPrincipal userPrincipal){
 
     public Long getSubject(String token, HttpServletRequest request){
         try{
+            
             return Long.valueOf(getJwtVerifier().verify(token).getSubject());
         }catch (TokenExpiredException e){
             log.error("Error in getSubject() at TokenProvider");

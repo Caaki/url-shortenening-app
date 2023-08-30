@@ -1,5 +1,7 @@
 package com.ares.urlshortening.domain;
 
+import com.ares.urlshortening.dto.UserDTO;
+import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.GrantedAuthority;
@@ -16,16 +18,16 @@ import static java.util.stream.Collectors.toList;
 public class UserPrincipal implements UserDetails {
 
     private final User user;
-    private final String permissions;
+    private final Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         //return AuthorityUtils.commaSeparatedStringToAuthorityList(permissions);
-        return stream(permissions.split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
+        return stream(this.role.getPermissions().split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
     }
 
-    public User getUser() {
-        return user;
+    public UserDTO getUser() {
+        return UserDTOMapper.toDTO(this.user,role);
     }
 
     @Override

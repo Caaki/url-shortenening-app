@@ -41,4 +41,36 @@ public class UserQuery {
             "WHERE code = :code";
 
 
+
+    public static final String DELETE_RESETPASSWORD_BY_USER_ID_QUERY=
+            "DELETE FROM ResetPasswordVerifications " +
+            "WHERE user_id = :userId";
+
+    public static final String INSERT_INTO_RESETPASSWORD_QUERY =
+            "INSERT INTO ResetPasswordVerifications(user_id,url) " +
+            "VALUES(:userId,:url)";
+
+    public static final String IS_PASSWORD_RESET_CODE_EXPIRED_BY_URL =
+            "SELECT expiration_date < NOW() " +
+            "FROM ResetPasswordVerifications "+
+            "WHERE url = :url";
+
+    public static final String SELECT_USER_BY_PASSWORD_URL_QUERY=
+            "SELECT * FROM Users "+
+            "WHERE id = (" +
+                    "SELECT user_id " +
+                    "FROM ResetPasswordVerifications " +
+                    "WHERE url = :url" +
+                    ")";
+
+    public static final String UPDATE_USER_PASSWORD_BY_URL_QUERY=
+            "UPDATE Users SET password = :newPassword " +
+            "WHERE id = (" +
+                    "SELECT user_id FROM ResetPasswordVerifications " +
+                    "WHERE url = :url)";
+
+    public static final String DELETE_RESETPASSWORD_BY_URL_QUERY =
+            "DELETE FROM ResetPasswordVerifications " +
+            "WHERE url = :url";
+
 }

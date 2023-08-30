@@ -6,10 +6,13 @@ import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.domain.UserPrincipal;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
+import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.LoginForm;
+import com.ares.urlshortening.forms.ResetPasswordForm;
 import com.ares.urlshortening.service.RoleService;
 import com.ares.urlshortening.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.Map;
 
+import static com.ares.urlshortening.utils.ExceptionUtils.processError;
 import static java.time.LocalDateTime.now;
 
 @RestController
@@ -37,6 +41,8 @@ public class UserController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final TokenProvider tokenProvider;
+    private final HttpServletRequest request;
+    private final HttpServletResponse response;
 
 
     @PostMapping("/register")
@@ -69,10 +75,51 @@ public class UserController {
         );
     }
 
+    @GetMapping("/resetpassword/{email}")
+    public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email){
+
+        userService.resetPassword(email);
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message("Email sent, check your email to reset your password.")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @GetMapping("/verify/password/{key}")
+    public ResponseEntity<HttpResponse> verifyPasswordUrl(@PathVariable("key") String key){
+        UserDTO userDTO =  userService.verifyPasswordKey(key);
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message("Please enter a new password.")
+                        .status(HttpStatus.OK)
+                        .data(Map.of("user", userDTO))
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @PostMapping("/resetpassword/{key}")
+    public ResponseEntity<HttpResponse> renewPassword(@PathVariable("key") String key, @RequestBody ResetPasswordForm form){
+            userService.renewPassword(key,form);
+            return ResponseEntity.created(getUri()).body(
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .message("Password has been reset")
+                            .status(HttpStatus.OK)
+                            .statusCode(HttpStatus.OK.value())
+                            .build()
+            );
+    }
+
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm){
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginForm.getEmail(), loginForm.getPassword()));
-        UserDTO userDTO = userService.getUserByEmail(loginForm.getEmail());
+        Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
+        UserDTO userDTO = getAuthenticatedUsed(authentication);
         return userDTO.isUsingMfa()? sendVerificationCode(userDTO) : sendResponse(userDTO);
     }
 
@@ -105,6 +152,20 @@ public class UserController {
         );
     }
 
+
+    private UserDTO getAuthenticatedUsed(Authentication authentication){
+        return ((UserPrincipal) authentication.getPrincipal()).getUser();
+    }
+
+    private Authentication authenticate(String email, String password) {
+        try{
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email,password));
+            return authentication;
+        }catch (Exception e){
+            processError(request,response,e);
+            throw new ApiException(e.getMessage());
+        }
+    }
 
     private URI getUri() {
         return URI.create(ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -142,7 +203,7 @@ public class UserController {
     private UserPrincipal getUserPrincipal(UserDTO userDTO) {
         return new UserPrincipal(
                 UserDTOMapper.fromDTO(userService.getUserById(userDTO.getId())),
-                roleService.getRoleByUserId(userDTO.getId()).getPermissions()
+                roleService.getRoleByUserId(userDTO.getId())
         );
     }
 }

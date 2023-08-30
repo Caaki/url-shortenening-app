@@ -38,7 +38,7 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
         return new ResponseEntity<>(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .reason(ex.getMessage())
+                        .reason("An internal error occurred")
                         .developerMessage(ex.getMessage())
                         .status(statusCode)
                         .statusCode(statusCode.value())

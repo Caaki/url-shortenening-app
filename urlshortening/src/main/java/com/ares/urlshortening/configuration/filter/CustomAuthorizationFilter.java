@@ -32,7 +32,6 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
         try{
             String token = getToken(request);
             Long userId = getUserId(request);
@@ -48,7 +47,6 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             log.error(e.getMessage());
             processError(request,response,e);
         }
-
     }
 
     private Long getUserId(HttpServletRequest request) {
