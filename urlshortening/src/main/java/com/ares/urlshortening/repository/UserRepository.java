@@ -21,4 +21,5 @@ public interface UserRepository<T extends User> {
     void resetPassword(String email);
     T verifyPasswordKey(String key);
     void renewPassword(String key, ResetPasswordForm form);
+    T verifyAccountKey(String key);
 }

@@ -28,8 +28,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.Map;
 
+import static com.ares.urlshortening.constants.Constants.TOKEN_PREFIX;
 import static com.ares.urlshortening.utils.ExceptionUtils.processError;
 import static java.time.LocalDateTime.now;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 @RequestMapping("/user")
@@ -124,7 +127,7 @@ public class UserController {
     }
 
     @GetMapping("/verify/code/{email}/{code}")
-    public ResponseEntity<HttpResponse> verifyCode(@PathVariable("email") String email,@PathVariable("code") String code){
+    public ResponseEntity<HttpResponse> verifyCodeFor2FA(@PathVariable("email") String email,@PathVariable("code") String code){
         UserDTO userDto = userService.verifyCode(email,code);
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
@@ -139,19 +142,69 @@ public class UserController {
         );
     }
 
-    @RequestMapping("/error")
-    public ResponseEntity<HttpResponse> handleError(HttpServletRequest request){
-
-        return ResponseEntity.badRequest().body(
+    @GetMapping("/verify/account/{key}")
+    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key){
+        UserDTO userDto = userService.verifyAccountKey(key);
+        return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .reason("There is no mapping for a "+ request.getMethod() + " request on this path")
-                        .status(HttpStatus.BAD_REQUEST)
-                        .statusCode(HttpStatus.BAD_REQUEST.value())
+                        .message(userDto.isEnabled()? "Account is already verified.":"Account verified.")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
                         .build()
         );
     }
 
+    @GetMapping("/refresh/token")
+    public ResponseEntity<HttpResponse> refreshToken(HttpServletRequest request){
+        if (isHeaderAndTokenValid(request)){
+            String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
+            UserDTO user = userService.getUserById(tokenProvider.getSubject(token,request));
+            return ResponseEntity.ok().body(
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .message("Token refreshed")
+                            .data(Map.of("user", user,
+                                    "access_token",tokenProvider.createAccessToken(getUserPrincipal(user)),
+                                    "refresh_token",token
+                                    ))
+                            .status(HttpStatus.OK)
+                            .statusCode(HttpStatus.OK.value())
+                            .build()
+            );
+        }else {
+            return ResponseEntity.badRequest().body(
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .reason("Refresh token missing or invalid")
+                            .developerMessage("Refresh token missing or invalid")
+                            .status(HttpStatus.BAD_REQUEST)
+                            .statusCode(HttpStatus.BAD_REQUEST.value())
+                            .build());
+        }
+    }
+
+
+    @RequestMapping("/error")
+    public ResponseEntity<HttpResponse> handleError(HttpServletRequest request){
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason("There is no mapping for a "+ request.getMethod() + " request on this path")
+                        .status(HttpStatus.NOT_FOUND)
+                        .statusCode(HttpStatus.NOT_FOUND.value())
+                        .build(), NOT_FOUND);
+    }
+
+    private boolean isHeaderAndTokenValid(HttpServletRequest request) {
+        if (request.getHeader(AUTHORIZATION)== null ||
+                !request.getHeader(AUTHORIZATION).startsWith(TOKEN_PREFIX)){
+            return false;
+        }
+        String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
+        Long userId = tokenProvider.getSubject(token,request);
+        return tokenProvider.isTokenValid(userId,token);
+    }
 
     private UserDTO getAuthenticatedUsed(Authentication authentication){
         return ((UserPrincipal) authentication.getPrincipal()).getUser();

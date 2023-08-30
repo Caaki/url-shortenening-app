@@ -105,7 +105,6 @@ public String createRefreshToken(UserPrincipal userPrincipal){
 
     public Long getSubject(String token, HttpServletRequest request){
         try{
-            
             return Long.valueOf(getJwtVerifier().verify(token).getSubject());
         }catch (TokenExpiredException e){
             log.error("Error in getSubject() at TokenProvider");

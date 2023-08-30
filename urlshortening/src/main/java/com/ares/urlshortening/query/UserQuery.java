@@ -73,4 +73,16 @@ public class UserQuery {
             "DELETE FROM ResetPasswordVerifications " +
             "WHERE url = :url";
 
+
+    public static final String SELECT_USER_BY_VERIFY_URL_QUERY =
+            "SELECT * FROM Users " +
+            "WHERE id = (" +
+                    "SELECT user_id FROM AccountVerifications " +
+                    "WHERE url = :url)";
+
+    public static final String UPDATE_USER_ENABLE_ACCOUNT_QUERY=
+            "UPDATE Users SET enabled = :enabled " +
+            "WHERE id = :userId";
+
+
 }

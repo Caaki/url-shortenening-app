@@ -7,7 +7,9 @@ public class Constants {
             "/user/register/**",
             "/user/verify/code/**",
             "/user/resetpassword/**",
-            "/user/verify/password/**"
+            "/user/verify/password/**",
+            "/user/verify/account/**",
+            "/user/refresh/token"
 
     };
 
@@ -33,7 +35,8 @@ public class Constants {
             "/user/verify/code",
             "/user/refresh/token",
             "/user/image",
-            "/user/new/password"
+            "/user/new/password",
+            "/user/refresh/token"
     };
 
 
