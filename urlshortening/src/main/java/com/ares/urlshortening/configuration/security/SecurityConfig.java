@@ -20,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import static com.ares.urlshortening.constants.Constants.PUBLIC_URLS;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @RequiredArgsConstructor
 @Configuration
@@ -37,14 +38,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
 
         http.csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.disable())
+                .cors(cors -> withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_URLS).permitAll());
         http.authorizeHttpRequests(request-> request.requestMatchers(HttpMethod.DELETE,"/user/delete/**").hasAuthority("DELETE:USER"));
         http.authorizeHttpRequests(request-> request.requestMatchers(HttpMethod.DELETE,"/url/delete/**").hasAuthority("DELETE:URL"));
-        http.exceptionHandling(exception ->exception.accessDeniedHandler(deniedHandler).authenticationEntryPoint(entryPoint));
         http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
+        http.exceptionHandling(exception ->exception.accessDeniedHandler(deniedHandler).authenticationEntryPoint(entryPoint));
         http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

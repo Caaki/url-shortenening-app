@@ -84,5 +84,13 @@ public class UserQuery {
             "UPDATE Users SET enabled = :enabled " +
             "WHERE id = :userId";
 
+    public static final String UPDATE_USER_DETAILS_QUERY=
+            "UPDATE Users " +
+            "Set first_name = :firstName, " +
+                    "last_name = :lastName, " +
+                    "email = :email, " +
+                    "phone = :phone, " +
+                    "bio =:bio " +
+            "WHERE id =:userId ";
 
 }

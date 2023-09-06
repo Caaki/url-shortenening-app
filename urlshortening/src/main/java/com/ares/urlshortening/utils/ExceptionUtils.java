@@ -60,7 +60,6 @@ public class ExceptionUtils {
                 .statusCode(httpStatus.value())
                 .status(httpStatus)
                 .build();
-
         response.setContentType(APPLICATION_JSON_VALUE);
         response.setStatus(httpStatus.value());
 

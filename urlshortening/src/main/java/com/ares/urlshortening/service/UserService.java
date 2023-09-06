@@ -3,6 +3,7 @@ package com.ares.urlshortening.service;
 import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.UpdateForm;
 import com.ares.urlshortening.repository.UserRepository;
 
 public interface UserService {
@@ -15,4 +16,5 @@ public interface UserService {
     UserDTO verifyPasswordKey(String key);
     void renewPassword(String key, ResetPasswordForm form);
     UserDTO verifyAccountKey(String key);
+    UserDTO updateUserDetails(UpdateForm user,Long id);
 }

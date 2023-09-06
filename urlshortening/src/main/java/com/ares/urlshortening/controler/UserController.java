@@ -9,15 +9,16 @@ import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.LoginForm;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.UpdateForm;
 import com.ares.urlshortening.service.RoleService;
 import com.ares.urlshortening.service.UserService;
+import com.ares.urlshortening.utils.UserUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,10 +28,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.ares.urlshortening.constants.Constants.TOKEN_PREFIX;
-import static com.ares.urlshortening.utils.ExceptionUtils.processError;
+import static com.ares.urlshortening.utils.UserUtils.*;
 import static java.time.LocalDateTime.now;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -64,14 +67,26 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<HttpResponse> saveUser(Authentication authentication){
-        System.out.println(authentication.getPrincipal());
-        System.out.println(authentication.getName());
-        UserDTO userDto = userService.getUserById(Long.valueOf(authentication.getName()));
+        UserDTO userDto=userService.getUserById(UserUtils.getAuthenticatedUser(authentication).getId());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",userDto))
                         .message("Profile works")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @PatchMapping("/update")
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user){
+        UserDTO updatedUser=userService.updateUserDetails(user,tokenProvider.getSubject(getToken(request),request));
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(Map.of("user",updatedUser))
+                        .message("User updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build()
@@ -122,7 +137,7 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm){
         Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UserDTO userDTO = getAuthenticatedUsed(authentication);
+        UserDTO userDTO = getLoggedInUser(authentication);
         return userDTO.isUsingMfa()? sendVerificationCode(userDTO) : sendResponse(userDTO);
     }
 
@@ -206,17 +221,13 @@ public class UserController {
         return tokenProvider.isTokenValid(userId,token);
     }
 
-    private UserDTO getAuthenticatedUsed(Authentication authentication){
-        return ((UserPrincipal) authentication.getPrincipal()).getUser();
-    }
 
     private Authentication authenticate(String email, String password) {
         try{
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email,password));
             return authentication;
         }catch (Exception e){
-            processError(request,response,e);
-            throw new ApiException(e.getMessage());
+            throw new ApiException("Bad credentials!");
         }
     }
 
@@ -228,6 +239,8 @@ public class UserController {
 
     private ResponseEntity<HttpResponse> sendVerificationCode(UserDTO userDTO) {
         userService.sendVerificationCode(userDTO);
+        log.info(userDTO.toString());
+
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
@@ -259,4 +272,10 @@ public class UserController {
                 roleService.getRoleByUserId(userDTO.getId())
         );
     }
+
+    private String getToken(HttpServletRequest request) {
+        return Optional.ofNullable(request.getHeader(AUTHORIZATION)).filter(header-> header.startsWith(TOKEN_PREFIX))
+                .map(token ->token.replace(TOKEN_PREFIX, EMPTY)).get();
+    }
+
 }

@@ -5,6 +5,7 @@ import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.UpdateForm;
 import com.ares.urlshortening.repository.RoleRepository;
 import com.ares.urlshortening.repository.UserRepository;
 import com.ares.urlshortening.service.UserService;
@@ -53,13 +54,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void renewPassword(String key, ResetPasswordForm form) {
-
         userRepository.renewPassword(key,form);
     }
 
     @Override
     public UserDTO verifyAccountKey(String key) {
-        return UserDTOMapper.toDTO(userRepository.verifyAccountKey(key));
+        return mapToUserDTO(userRepository.verifyAccountKey(key));
+    }
+
+    @Override
+    public UserDTO updateUserDetails(UpdateForm user, Long id) {
+        return mapToUserDTO(userRepository.updateUserDetails(user, id));
     }
 
     private UserDTO mapToUserDTO(User user){

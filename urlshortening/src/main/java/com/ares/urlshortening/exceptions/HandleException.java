@@ -75,7 +75,6 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<HttpResponse> badCredentialsException(BadCredentialsException exception) {
-        log.error(exception.getMessage());
         return new ResponseEntity<>(
                 HttpResponse.builder()
                         .timeStamp(now().toString())

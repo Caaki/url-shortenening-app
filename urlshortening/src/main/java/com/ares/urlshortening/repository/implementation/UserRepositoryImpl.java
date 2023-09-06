@@ -7,6 +7,7 @@ import com.ares.urlshortening.enumeration.VerificationType;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.UpdateForm;
 import com.ares.urlshortening.repository.RoleRepository;
 import com.ares.urlshortening.repository.UserRepository;
 import com.ares.urlshortening.rowmapper.UserRowMapper;
@@ -240,6 +241,18 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         }
     }
 
+    @Override
+    public User updateUserDetails(UpdateForm user, Long id) {
+        try{
+            SqlParameterSource params = getUserDetailsSqlParameterSource(user,id);
+            jdbc.update(UPDATE_USER_DETAILS_QUERY, requireNonNull(params));
+            return get(id);
+        }catch (Exception e ){
+            log.error(e.getMessage());
+            throw new ApiException("An unknown error occurred, Please try again");
+        }
+    }
+
     private boolean isLinkExpired(String key, VerificationType verificationType) {
         try {
             return jdbc.queryForObject(IS_PASSWORD_RESET_CODE_EXPIRED_BY_URL, Map.of("url", getVerificationUrl(key, PASSWORD.getType())), Boolean.class);
@@ -281,5 +294,16 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 .addValue("email", user.getEmail())
                 .addValue("password", passwordEncoder.encode(user.getPassword()));
     }
+
+    private SqlParameterSource getUserDetailsSqlParameterSource(UpdateForm user,Long id) {
+        return new MapSqlParameterSource()
+                .addValue("userId",id)
+                .addValue("firstName", user.getFirstName())
+                .addValue("lastName", user.getLastName())
+                .addValue("email", user.getEmail())
+                .addValue("phone",user.getPhone())
+                .addValue("bio",user.getBio());
+    }
+
 }
 
