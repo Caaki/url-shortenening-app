@@ -4,7 +4,9 @@ import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.SettingsForm;
 import com.ares.urlshortening.forms.UpdateForm;
+import com.ares.urlshortening.forms.UpdatePasswordForm;
 
 import java.util.Collection;
 
@@ -25,4 +27,9 @@ public interface UserRepository<T extends User> {
     T verifyAccountKey(String key);
 
     T updateUserDetails(UpdateForm user,Long id);
+    void updateUserPassword(UpdatePasswordForm form, Long userId);
+
+    User updateUserSettings(SettingsForm form, Long userId);
+
+    T toggleMfa(Long id);
 }

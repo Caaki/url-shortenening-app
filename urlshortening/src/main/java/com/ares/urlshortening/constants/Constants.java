@@ -20,7 +20,7 @@ public class Constants {
     public static final String MOTO = "Make urls short again!";
 
     public static final String AUTHORITIES = "authorities";
-    public static final long ACCESS_TOKEN_EXPIRATION_TIME = 432_000_000;
+    public static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000;
     public static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000;
 
 

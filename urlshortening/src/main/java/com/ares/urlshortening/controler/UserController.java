@@ -1,5 +1,6 @@
 package com.ares.urlshortening.controler;
 
+import ch.qos.logback.core.util.TimeUtil;
 import com.ares.urlshortening.configuration.provider.TokenProvider;
 import com.ares.urlshortening.domain.HttpResponse;
 import com.ares.urlshortening.domain.User;
@@ -7,9 +8,7 @@ import com.ares.urlshortening.domain.UserPrincipal;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import com.ares.urlshortening.exceptions.ApiException;
-import com.ares.urlshortening.forms.LoginForm;
-import com.ares.urlshortening.forms.ResetPasswordForm;
-import com.ares.urlshortening.forms.UpdateForm;
+import com.ares.urlshortening.forms.*;
 import com.ares.urlshortening.service.RoleService;
 import com.ares.urlshortening.service.UserService;
 import com.ares.urlshortening.utils.UserUtils;
@@ -29,13 +28,16 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static com.ares.urlshortening.constants.Constants.TOKEN_PREFIX;
 import static com.ares.urlshortening.utils.UserUtils.*;
 import static java.time.LocalDateTime.now;
+import static java.util.Map.of;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
 @RequestMapping("/user")
@@ -80,13 +82,55 @@ public class UserController {
     }
 
     @PatchMapping("/update")
-    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user){
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user, HttpServletRequest request) throws InterruptedException {
         UserDTO updatedUser=userService.updateUserDetails(user,tokenProvider.getSubject(getToken(request),request));
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",updatedUser))
                         .message("User updated")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @PatchMapping("/update/password")
+    public ResponseEntity<HttpResponse> updateUserPassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) throws InterruptedException {
+        userService.updateUserPassword(form,getAuthenticatedUser(authentication).getId());
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message("Password updated successfully")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @PatchMapping("/update/settings")
+    public ResponseEntity<HttpResponse> updateUserSettings(@RequestBody @Valid SettingsForm form, Authentication authentication) throws InterruptedException {
+        UserDTO updatedUser = userService.updateUserSettings(form,getAuthenticatedUser(authentication).getId());
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(Map.of("user",updatedUser))
+                        .message("User settings updated successfully")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @PatchMapping("/togglemfa")
+    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
+        TimeUnit.SECONDS.sleep(1);
+        UserDTO updatedUser = userService.toggleMfa(getAuthenticatedUser(authentication).getId());
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(Map.of("user",updatedUser))
+                        .message("MFA updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build()
@@ -172,30 +216,29 @@ public class UserController {
 
     @GetMapping("/refresh/token")
     public ResponseEntity<HttpResponse> refreshToken(HttpServletRequest request){
+        log.info(request.getHeader(AUTHORIZATION));
         if (isHeaderAndTokenValid(request)){
             String token = request.getHeader(AUTHORIZATION).substring(TOKEN_PREFIX.length());
-            UserDTO user = userService.getUserById(tokenProvider.getSubject(token,request));
+            UserDTO userDTO = userService.getUserById(tokenProvider.getSubject(token, request));
             return ResponseEntity.ok().body(
                     HttpResponse.builder()
                             .timeStamp(now().toString())
+                            .data(of("user", userDTO,
+                                    "access_token", tokenProvider.createAccessToken(getUserPrincipal(userDTO)),
+                                    "refresh_token", token))
                             .message("Token refreshed")
-                            .data(Map.of("user", user,
-                                    "access_token",tokenProvider.createAccessToken(getUserPrincipal(user)),
-                                    "refresh_token",token
-                                    ))
-                            .status(HttpStatus.OK)
-                            .statusCode(HttpStatus.OK.value())
-                            .build()
-            );
-        }else {
-            return ResponseEntity.badRequest().body(
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build());
+        }
+        else {
+            return new ResponseEntity<>(
                     HttpResponse.builder()
                             .timeStamp(now().toString())
                             .reason("Refresh token missing or invalid")
-                            .developerMessage("Refresh token missing or invalid")
-                            .status(HttpStatus.BAD_REQUEST)
-                            .statusCode(HttpStatus.BAD_REQUEST.value())
-                            .build());
+                            .status(BAD_REQUEST)
+                            .statusCode(BAD_REQUEST.value())
+                            .build(), BAD_REQUEST);
         }
     }
 

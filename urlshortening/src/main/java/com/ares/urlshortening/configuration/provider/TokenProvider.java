@@ -107,7 +107,7 @@ public String createRefreshToken(UserPrincipal userPrincipal){
         try{
             return Long.valueOf(getJwtVerifier().verify(token).getSubject());
         }catch (TokenExpiredException e){
-            log.error("Error in getSubject() at TokenProvider");
+            log.error("Token expiered!");
             request.setAttribute("expiredMessage",e.getMessage());
             throw e;
         }catch (InvalidClaimException e){

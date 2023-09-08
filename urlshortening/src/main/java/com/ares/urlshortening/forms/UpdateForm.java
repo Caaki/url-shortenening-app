@@ -21,4 +21,14 @@ public class UpdateForm {
     private String phone;
     private String bio;
 
+    @Override
+    public String toString() {
+        return "UpdateForm{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
+                ", bio='" + bio + '\'' +
+                '}';
+    }
 }

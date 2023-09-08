@@ -16,8 +16,7 @@ import org.springframework.security.authentication.LockedException;
 import java.io.OutputStream;
 
 import static java.time.LocalDateTime.now;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @Slf4j
@@ -34,7 +33,11 @@ public class ExceptionUtils {
             String customMessage = ex.getMessage()+ " on route: " + request.getRequestURI();
             HttpResponse httpResponse = getHttpResponse(response, customMessage, BAD_REQUEST);
             writeResponse(response, httpResponse);
-        }else{
+        }else if (ex instanceof TokenExpiredException){
+            HttpResponse httpResponse = getHttpResponse(response, "Token expired!", UNAUTHORIZED);
+            writeResponse(response, httpResponse);
+        }
+        else{
             HttpResponse httpResponse = getHttpResponse(response, "An error occurred. Please try again" ,INTERNAL_SERVER_ERROR);
             writeResponse(response, httpResponse);
         }

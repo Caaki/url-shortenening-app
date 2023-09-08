@@ -7,7 +7,9 @@ import com.ares.urlshortening.enumeration.VerificationType;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.domain.User;
 import com.ares.urlshortening.forms.ResetPasswordForm;
+import com.ares.urlshortening.forms.SettingsForm;
 import com.ares.urlshortening.forms.UpdateForm;
+import com.ares.urlshortening.forms.UpdatePasswordForm;
 import com.ares.urlshortening.repository.RoleRepository;
 import com.ares.urlshortening.repository.UserRepository;
 import com.ares.urlshortening.rowmapper.UserRowMapper;
@@ -35,7 +37,7 @@ import static com.ares.urlshortening.enumeration.RoleType.ROLE_USER;
 import static com.ares.urlshortening.enumeration.VerificationType.ACCOUNT;
 import static com.ares.urlshortening.enumeration.VerificationType.PASSWORD;
 import static com.ares.urlshortening.query.UserQuery.*;
-import static com.ares.urlshortening.utils.ExceptionUtils.processError;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static java.util.Objects.requireNonNull;
 
 @Repository
@@ -247,11 +249,61 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             SqlParameterSource params = getUserDetailsSqlParameterSource(user,id);
             jdbc.update(UPDATE_USER_DETAILS_QUERY, requireNonNull(params));
             return get(id);
+        }catch (EmptyResultDataAccessException e ){
+            throw new ApiException("No user found, the request wasn't valid");
         }catch (Exception e ){
             log.error(e.getMessage());
             throw new ApiException("An unknown error occurred, Please try again");
         }
     }
+
+    @Override
+    public void updateUserPassword(UpdatePasswordForm form, Long userId) {
+        if (!form.getNewPassword().equals(form.getConfirmPassword())) {
+            throw new ApiException("Passwords do not match");
+        }
+        User user = get(userId);
+        if (passwordEncoder.matches(form.getCurrentPassword(), user.getPassword())) {
+            try {
+
+                jdbc.update(UPDATE_USER_PASSWORD_QUERY, Map.of("userId",userId,"newPassword",passwordEncoder.encode(form.getNewPassword())));
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                throw new ApiException("An unknown error occurred, Please try again");
+            }
+        }else {
+            throw new ApiException("Incorrect current password, please try again");
+        }
+    }
+
+    @Override
+    public User updateUserSettings(SettingsForm form, Long userId) {
+        try {
+            jdbc.update(UPDATE_USER_SETTINGS_QUERY, Map.of("userId",userId,"enabled",form.getEnabled(),"notLocked", form.getNotLocked()));
+            return get(userId);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ApiException("An unknown error occurred, Please try again");
+        }
+    }
+
+    @Override
+    public User toggleMfa(Long id) {
+        User user = get(id);
+        if (isBlank(user.getPhone())){
+            throw new ApiException("You need to add a phone number to enable Multi-factor authentication");
+        }else{
+            user.setUsingMfa(!user.isUsingMfa());
+            try {
+                jdbc.update(UPDATE_USER_MFA_QUERY, Map.of("userId",id,"isUsingMfa",user.isUsingMfa()));
+                return get(id);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                throw new ApiException("An unknown error occurred, Please try again");
+            }
+        }
+    }
+
 
     private boolean isLinkExpired(String key, VerificationType verificationType) {
         try {
@@ -304,6 +356,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 .addValue("phone",user.getPhone())
                 .addValue("bio",user.getBio());
     }
+
 
 }
 

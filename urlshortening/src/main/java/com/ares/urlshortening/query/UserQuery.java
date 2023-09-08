@@ -93,4 +93,18 @@ public class UserQuery {
                     "bio =:bio " +
             "WHERE id =:userId ";
 
+    public static final String UPDATE_USER_PASSWORD_QUERY=
+            "UPDATE Users Set password =:newPassword " +
+            "WHERE id=:userId";
+
+    public static final String UPDATE_USER_SETTINGS_QUERY=
+            "UPDATE Users " +
+                    "Set enabled = :enabled, " +
+                    "not_locked = :notLocked " +
+                    "WHERE id =:userId ";
+
+    public static final String UPDATE_USER_MFA_QUERY=
+            "UPDATE Users Set " +
+                "using_mfa = :isUsingMfa " +
+                "WHERE id = :userId";
 }

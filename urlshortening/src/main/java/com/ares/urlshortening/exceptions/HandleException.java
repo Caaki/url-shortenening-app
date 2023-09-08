@@ -1,6 +1,7 @@
 package com.ares.urlshortening.exceptions;
 
 import com.ares.urlshortening.domain.HttpResponse;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -124,6 +125,19 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                         .status(FORBIDDEN)
                         .statusCode(FORBIDDEN.value())
                         .build(), FORBIDDEN);
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<Object> tokenExpiered(Exception exception){
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(LocalDateTime.now().toString())
+                        .reason("Token expired!")
+                        .developerMessage(exception.getMessage())
+                        .status(HttpStatus.resolve(INTERNAL_SERVER_ERROR.value()))
+                        .statusCode(INTERNAL_SERVER_ERROR.value())
+                        .build(), INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(Exception.class)
