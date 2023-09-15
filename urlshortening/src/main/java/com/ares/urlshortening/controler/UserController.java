@@ -1,12 +1,14 @@
 package com.ares.urlshortening.controler;
 
-import ch.qos.logback.core.util.TimeUtil;
 import com.ares.urlshortening.configuration.provider.TokenProvider;
 import com.ares.urlshortening.domain.HttpResponse;
 import com.ares.urlshortening.domain.User;
+import com.ares.urlshortening.domain.UserEvent;
 import com.ares.urlshortening.domain.UserPrincipal;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
+import com.ares.urlshortening.enumeration.EventType;
+import com.ares.urlshortening.event.NewUserEvent;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.*;
 import com.ares.urlshortening.service.RoleService;
@@ -17,20 +19,27 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static com.ares.urlshortening.constants.Constants.TOKEN_PREFIX;
+import static com.ares.urlshortening.enumeration.EventType.*;
+import static com.ares.urlshortening.utils.ExceptionUtils.processError;
 import static com.ares.urlshortening.utils.UserUtils.*;
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
@@ -38,6 +47,7 @@ import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 
 @RestController
 @RequestMapping("/user")
@@ -51,6 +61,7 @@ public class UserController {
     private final TokenProvider tokenProvider;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+    private final ApplicationEventPublisher publisher;
 
 
     @PostMapping("/register")
@@ -137,6 +148,21 @@ public class UserController {
         );
     }
 
+    @PatchMapping("/update/image")
+    public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image")MultipartFile image) throws InterruptedException {
+        UserDTO user = getAuthenticatedUser(authentication);
+        userService.updateImage(user,image);
+        return ResponseEntity.created(getUri()).body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(Map.of("user",userService.getUserById(user.getId())))
+                        .message("Image updated")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
     @GetMapping("/resetpassword/{email}")
     public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email){
 
@@ -149,6 +175,11 @@ public class UserController {
                         .statusCode(HttpStatus.OK.value())
                         .build()
         );
+    }
+    @GetMapping(value = "/image/{fileName}",produces = IMAGE_PNG_VALUE)
+    public byte[] getImage(@PathVariable("fileName") String fileName) throws IOException {
+        return Files.readAllBytes
+                (Paths.get(System.getProperty("user.home")+"/Downloads/urlShorteningImages/"+fileName));
     }
 
     @GetMapping("/verify/password/{key}")
@@ -180,8 +211,7 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm){
-        Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UserDTO userDTO = getLoggedInUser(authentication);
+        UserDTO userDTO = authenticate(loginForm.getEmail(), loginForm.getPassword());
         return userDTO.isUsingMfa()? sendVerificationCode(userDTO) : sendResponse(userDTO);
     }
 
@@ -265,11 +295,26 @@ public class UserController {
     }
 
 
-    private Authentication authenticate(String email, String password) {
+    private UserDTO authenticate(String email, String password) {
+        UserDTO user = userService.getUserByEmail(email);
         try{
+            if (user!=null){
+                publisher.publishEvent(new NewUserEvent
+                        (user.getId(), LOGIN_ATTEMPT));
+            }
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email,password));
-            return authentication;
+            UserDTO loggedInUser = getLoggedInUser(authentication);
+            if (!loggedInUser.isUsingMfa()){
+                publisher.publishEvent(new NewUserEvent
+                        (loggedInUser.getId(), LOGIN_ATTEMPT_SUCCESS));
+            }
+            return loggedInUser;
         }catch (Exception e){
+            if (user!=null){
+                publisher.publishEvent(new NewUserEvent
+                        (user.getId(), LOGIN_ATTEMPT_FAILURE));
+            }
+            //processError(request,response,e);
             throw new ApiException("Bad credentials!");
         }
     }

@@ -29,14 +29,20 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static com.ares.urlshortening.enumeration.RoleType.ROLE_USER;
 import static com.ares.urlshortening.enumeration.VerificationType.ACCOUNT;
 import static com.ares.urlshortening.enumeration.VerificationType.PASSWORD;
 import static com.ares.urlshortening.query.UserQuery.*;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static java.util.Objects.requireNonNull;
 
@@ -302,6 +308,36 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 throw new ApiException("An unknown error occurred, Please try again");
             }
         }
+    }
+
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        user.setImageUrl(setUserImageUrl(user.getEmail()));
+        saveImage(user.getEmail(),image);
+        jdbc.update(UPDATE_USER_IMAGE_URL_QUERY, Map.of("imageUrl",user.getImageUrl(),"userId",user.getId()));
+    }
+
+    private void saveImage(String email, MultipartFile image) {
+        Path fileStorageLocation = Paths.get(System.getProperty("user.home") + "/Downloads/urlShorteningImages/").toAbsolutePath().normalize();
+        if (!Files.exists(fileStorageLocation)){
+            try {
+                Files.createDirectories(fileStorageLocation);
+            } catch (IOException e) {
+                log.error("Unable to create the specified directory!");
+                throw new ApiException(e.getMessage());
+            }
+            log.info("Created directories "+fileStorageLocation);
+        }
+        try{
+            Files.copy(image.getInputStream(),fileStorageLocation.resolve(email+".png"),REPLACE_EXISTING);
+        } catch (IOException e) {
+            throw new ApiException(e.getMessage());
+        }
+        log.info("New profile image saved!");
+    }
+
+    private String setUserImageUrl(String email) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path("/user/image/"+ email+".png").toUriString();
     }
 
 

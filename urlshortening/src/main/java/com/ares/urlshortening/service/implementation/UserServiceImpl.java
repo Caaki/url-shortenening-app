@@ -14,6 +14,7 @@ import com.ares.urlshortening.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
@@ -82,6 +83,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO toggleMfa(Long id) {
         return  mapToUserDTO(userRepository.toggleMfa(id));
+    }
+
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        userRepository.updateImage(user,image);
     }
 
     private UserDTO mapToUserDTO(User user){

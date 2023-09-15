@@ -107,4 +107,10 @@ public class UserQuery {
             "UPDATE Users Set " +
                 "using_mfa = :isUsingMfa " +
                 "WHERE id = :userId";
+
+
+    public static final String UPDATE_USER_IMAGE_URL_QUERY=
+            "UPDATE Users SET " +
+            "image_url = :imageUrl " +
+            "WHERE id=:userId";
 }

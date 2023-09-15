@@ -7,6 +7,7 @@ import com.ares.urlshortening.forms.SettingsForm;
 import com.ares.urlshortening.forms.UpdateForm;
 import com.ares.urlshortening.forms.UpdatePasswordForm;
 import com.ares.urlshortening.repository.UserRepository;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
     UserDTO createUser(User user);
@@ -22,4 +23,5 @@ public interface UserService {
     void updateUserPassword(UpdatePasswordForm form, Long subject);
     UserDTO updateUserSettings(SettingsForm form, Long id);
     UserDTO toggleMfa(Long id);
+    void updateImage(UserDTO user, MultipartFile image);
 }

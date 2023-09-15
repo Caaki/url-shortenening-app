@@ -9,7 +9,8 @@ public class Constants {
             "/user/resetpassword/**",
             "/user/verify/password/**",
             "/user/verify/account/**",
-            "/user/refresh/token"
+            "/user/refresh/token",
+            "/user/image/**"
 
     };
 
