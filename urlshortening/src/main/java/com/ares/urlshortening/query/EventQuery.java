@@ -5,7 +5,7 @@ public class EventQuery {
             "SELECT " +
             "e.description, e.type, ue.id,ue.ip_address,ue.device, ue.browser, ue.created_at " +
             "FROM Events e " +
-            "JOIN UserEvents ue ON ue.user_id = e.id " +
+            "JOIN UserEvents ue ON ue.event_id = e.id " +
             "JOIN Users u ON u.id=ue.user_id " +
             "WHERE u.id=:userId " +
             "ORDER BY ue.created_at DESC " +

@@ -1,11 +1,9 @@
 package com.ares.urlshortening.repository.implementation;
 
-import com.ares.urlshortening.domain.Role;
 import com.ares.urlshortening.domain.UserEvent;
 import com.ares.urlshortening.enumeration.EventType;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.repository.EventRepository;
-import com.ares.urlshortening.rowmapper.RoleRowMapper;
 import com.ares.urlshortening.rowmapper.UserEventRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Collection;
 import java.util.Map;
 
-import static com.ares.urlshortening.enumeration.RoleType.ROLE_USER;
 import static com.ares.urlshortening.query.EventQuery.*;
-import static com.ares.urlshortening.query.RoleQuery.SELECT_ROLE_BY_USER_ID_QUERY;
 
 @Repository
 @RequiredArgsConstructor

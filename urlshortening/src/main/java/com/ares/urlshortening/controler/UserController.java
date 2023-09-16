@@ -1,16 +1,14 @@
 package com.ares.urlshortening.controler;
 
 import com.ares.urlshortening.configuration.provider.TokenProvider;
-import com.ares.urlshortening.domain.HttpResponse;
-import com.ares.urlshortening.domain.User;
-import com.ares.urlshortening.domain.UserEvent;
-import com.ares.urlshortening.domain.UserPrincipal;
+import com.ares.urlshortening.domain.*;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
 import com.ares.urlshortening.enumeration.EventType;
 import com.ares.urlshortening.event.NewUserEvent;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.*;
+import com.ares.urlshortening.service.EventService;
 import com.ares.urlshortening.service.RoleService;
 import com.ares.urlshortening.service.UserService;
 import com.ares.urlshortening.utils.UserUtils;
@@ -62,6 +60,7 @@ public class UserController {
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final ApplicationEventPublisher publisher;
+    private final EventService eventService;
 
 
     @PostMapping("/register")
@@ -81,10 +80,11 @@ public class UserController {
     @GetMapping("/profile")
     public ResponseEntity<HttpResponse> saveUser(Authentication authentication){
         UserDTO userDto=userService.getUserById(UserUtils.getAuthenticatedUser(authentication).getId());
+        Role role = roleService.getRoleByUserId(userDto.getId());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(Map.of("user",userDto))
+                        .data(Map.of("user",userDto,"role",role,"userEvents",eventService.getEventsByUserId(userDto.getId())))
                         .message("Profile works")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -95,10 +95,12 @@ public class UserController {
     @PatchMapping("/update")
     public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user, HttpServletRequest request) throws InterruptedException {
         UserDTO updatedUser=userService.updateUserDetails(user,tokenProvider.getSubject(getToken(request),request));
+        publisher.publishEvent(new NewUserEvent(updatedUser.getId(), PROFILE_UPDATE));
+        Role role = roleService.getRoleByUserId(updatedUser.getId());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(Map.of("user",updatedUser))
+                        .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
                         .message("User updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -108,11 +110,15 @@ public class UserController {
 
     @PatchMapping("/update/password")
     public ResponseEntity<HttpResponse> updateUserPassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) throws InterruptedException {
-        userService.updateUserPassword(form,getAuthenticatedUser(authentication).getId());
+        UserDTO userDTO = getAuthenticatedUser(authentication);
+        userService.updateUserPassword(form,userDTO.getId());
+        Role role = roleService.getRoleByUserId(userDTO.getId());
+        publisher.publishEvent(new NewUserEvent(userDTO.getId(), PASSWORD_UPDATE));
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .message("Password updated successfully")
+                        .message("Password updated successfully") // hmmmmmmmmm
+                        .data(Map.of("user",userDTO,"role",role,"userEvents",eventService.getEventsByUserId(userDTO.getId())))
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build()
@@ -122,10 +128,12 @@ public class UserController {
     @PatchMapping("/update/settings")
     public ResponseEntity<HttpResponse> updateUserSettings(@RequestBody @Valid SettingsForm form, Authentication authentication) throws InterruptedException {
         UserDTO updatedUser = userService.updateUserSettings(form,getAuthenticatedUser(authentication).getId());
+        publisher.publishEvent(new NewUserEvent(updatedUser.getId(),ACCOUNT_SETTINGS_UPDATE));
+        Role role = roleService.getRoleByUserId(updatedUser.getId());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(Map.of("user",updatedUser))
+                        .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
                         .message("User settings updated successfully")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -135,12 +143,13 @@ public class UserController {
 
     @PatchMapping("/togglemfa")
     public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
-        TimeUnit.SECONDS.sleep(1);
         UserDTO updatedUser = userService.toggleMfa(getAuthenticatedUser(authentication).getId());
+        publisher.publishEvent(new NewUserEvent(updatedUser.getId(),MFA_UPDATE));
+        Role role = roleService.getRoleByUserId(updatedUser.getId());
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(Map.of("user",updatedUser))
+                        .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
                         .message("MFA updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -152,10 +161,12 @@ public class UserController {
     public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image")MultipartFile image) throws InterruptedException {
         UserDTO user = getAuthenticatedUser(authentication);
         userService.updateImage(user,image);
+        Role role = roleService.getRoleByUserId(user.getId());
+        publisher.publishEvent(new NewUserEvent(user.getId(), PROFILE_PICTURE_UPDATE));
         return ResponseEntity.created(getUri()).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(Map.of("user",userService.getUserById(user.getId())))
+                        .data(Map.of("user",userService.getUserById(user.getId()),"role",role,"userEvents",eventService.getEventsByUserId(user.getId())))
                         .message("Image updated")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
@@ -218,6 +229,7 @@ public class UserController {
     @GetMapping("/verify/code/{email}/{code}")
     public ResponseEntity<HttpResponse> verifyCodeFor2FA(@PathVariable("email") String email,@PathVariable("code") String code){
         UserDTO userDto = userService.verifyCode(email,code);
+        publisher.publishEvent(new NewUserEvent(userDto.getId(),LOGIN_ATTEMPT_SUCCESS));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
