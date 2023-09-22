@@ -2,11 +2,11 @@ package com.ares.urlshortening.query;
 
 public class UserQuery {
     public static final String COUNT_USER_EMAIL_QUERY =
-            "SELECT COUNT(*) FROM Users " +
+            "SELECT COUNT(*) FROM users " +
             "WHERE email = :email";
 
     public static final String INSERT_USER_QUERY="INSERT INTO" +
-            " Users (first_name, last_name, email, password) " +
+            " users (first_name, last_name, email, password) " +
             "VALUES (:firstName, :lastName, :email, :password)";
 
     public static final String INSERT_VERIFICATION_URL_QUERY =
@@ -14,7 +14,7 @@ public class UserQuery {
             "VALUES (:userId, :url) ";
 
     public static final String SELECT_USER_BY_EMAIL_QUERY=
-            "SELECT * FROM Users " +
+            "SELECT * FROM users " +
             "WHERE email = :email";
 
 
@@ -27,12 +27,12 @@ public class UserQuery {
             "WHERE user_id = :userId";
 
     public static final String SELECT_USER_BY_ID_QUERY =
-            "SELECT * FROM Users " +
+            "SELECT * FROM users " +
             "WHERE id = :userId";
 
 
     public static final String SELECT_USER_BY_USER_CODE_QUERY =
-            "SELECT * FROM Users " +
+            "SELECT * FROM users " +
             "WHERE id = (SELECT user_id FROM TwoFactorVerifications WHERE code = :code)";
 
     public static final String IS_VERIFICATION_CODE_EXPIRED_BY_CODE =
@@ -56,7 +56,7 @@ public class UserQuery {
             "WHERE url = :url";
 
     public static final String SELECT_USER_BY_PASSWORD_URL_QUERY=
-            "SELECT * FROM Users "+
+            "SELECT * FROM users "+
             "WHERE id = (" +
                     "SELECT user_id " +
                     "FROM ResetPasswordVerifications " +
@@ -64,7 +64,7 @@ public class UserQuery {
                     ")";
 
     public static final String UPDATE_USER_PASSWORD_BY_URL_QUERY=
-            "UPDATE Users SET password = :newPassword " +
+            "UPDATE users SET password = :newPassword " +
             "WHERE id = (" +
                     "SELECT user_id FROM ResetPasswordVerifications " +
                     "WHERE url = :url)";
@@ -75,17 +75,17 @@ public class UserQuery {
 
 
     public static final String SELECT_USER_BY_VERIFY_URL_QUERY =
-            "SELECT * FROM Users " +
+            "SELECT * FROM users " +
             "WHERE id = (" +
                     "SELECT user_id FROM AccountVerifications " +
                     "WHERE url = :url)";
 
     public static final String UPDATE_USER_ENABLE_ACCOUNT_QUERY=
-            "UPDATE Users SET enabled = :enabled " +
+            "UPDATE users SET enabled = :enabled " +
             "WHERE id = :userId";
 
     public static final String UPDATE_USER_DETAILS_QUERY=
-            "UPDATE Users " +
+            "UPDATE users " +
             "Set first_name = :firstName, " +
                     "last_name = :lastName, " +
                     "email = :email, " +
@@ -94,23 +94,23 @@ public class UserQuery {
             "WHERE id =:userId ";
 
     public static final String UPDATE_USER_PASSWORD_QUERY=
-            "UPDATE Users Set password =:newPassword " +
+            "UPDATE users Set password =:newPassword " +
             "WHERE id=:userId";
 
     public static final String UPDATE_USER_SETTINGS_QUERY=
-            "UPDATE Users " +
+            "UPDATE users " +
                     "Set enabled = :enabled, " +
                     "not_locked = :notLocked " +
                     "WHERE id =:userId ";
 
     public static final String UPDATE_USER_MFA_QUERY=
-            "UPDATE Users Set " +
+            "UPDATE users Set " +
                 "using_mfa = :isUsingMfa " +
                 "WHERE id = :userId";
 
 
     public static final String UPDATE_USER_IMAGE_URL_QUERY=
-            "UPDATE Users SET " +
+            "UPDATE users SET " +
             "image_url = :imageUrl " +
             "WHERE id=:userId";
 }

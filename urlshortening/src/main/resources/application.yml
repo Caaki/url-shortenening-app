@@ -15,12 +15,13 @@ spring:
     url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
+    driverClassName: com.mysql.cj.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     generate-ddl: true
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     properties:
       hibernate:
         globally_quoted_indentifiers: true
