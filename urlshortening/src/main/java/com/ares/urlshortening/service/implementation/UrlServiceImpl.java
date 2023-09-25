@@ -74,4 +74,9 @@ public class UrlServiceImpl implements UrlService {
     public Page<Url> adminSearch(String realUrl, int page, int size) {
         return urlRepository.findByRealUrlContaining(realUrl,of(page,size));
     }
+
+    @Override
+    public Url redirectUrl(String shortUrl) {
+        return urlRepository.findByShortUrl(shortUrl);
+    }
 }

@@ -19,4 +19,5 @@ public interface UrlService {
     void deleteUrl(Long id);
     Page<Url> searchUrls(String realUrl,Long id, int page, int size);
     Page<Url> adminSearch(String realUrl, int page, int size);
+    Url redirectUrl(String shortUrl);
 }

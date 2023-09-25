@@ -61,6 +61,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        log.error(request.getRequestURI());
         return  request.getHeader(AUTHORIZATION) == null ||
                 !request.getHeader(AUTHORIZATION).startsWith(TOKEN_PREFIX) ||
                 request.getMethod().equalsIgnoreCase(HTTP_METHOD_OPTIONS) ||

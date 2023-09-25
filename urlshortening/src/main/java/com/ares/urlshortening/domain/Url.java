@@ -34,16 +34,6 @@ public class Url {
     private String shortUrl;
     private LocalDateTime createdAt;
     private Boolean enabled;
+    private String alias;
 
-    @Override
-    public String toString() {
-        return "Url{" +
-                "id=" + id +
-                ", user=" + user +
-                ", realUrl='" + realUrl + '\'' +
-                ", shortUrl='" + shortUrl + '\'' +
-                ", createdAt=" + createdAt +
-                ", enabled=" + enabled +
-                '}';
-    }
 }

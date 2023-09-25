@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.ares.urlshortening.utils.UpdateUtils.*;
 import static java.time.LocalDateTime.now;
@@ -45,7 +46,7 @@ public class UrlController {
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .message("Urls retrieved")
-                        .data(Map.of("user", authentication, "urls", urlService.getByUser(authentication, page.orElse(0), size.orElse(10))))
+                        .data(Map.of("user", authentication, "page", urlService.getByUser(authentication, page.orElse(0), size.orElse(10))))
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build()
@@ -96,6 +97,25 @@ public class UrlController {
         }
     }
 
+    @GetMapping("/redirect/{link}")
+    public ResponseEntity<HttpResponse> redirectLink(@PathVariable("link") String link) throws InterruptedException {
+        Url url = urlService.redirectUrl(link);
+        TimeUnit.SECONDS.sleep(3);
+        log.error("url.toString()");
+        if (url == null){
+            throw new ApiException("Invalid Url!");
+        }else{
+            return ResponseEntity.ok((
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .message("Urls retrieved")
+                            .data(Map.of("url",url.getRealUrl()))
+                            .status(HttpStatus.OK)
+                            .statusCode(HttpStatus.OK.value())
+                            .build()
+            ));
+        }
+    }
 
     @GetMapping("/search")
     public ResponseEntity<HttpResponse> searchUrls(
@@ -160,9 +180,6 @@ public class UrlController {
             @PathVariable("id") Long id
     ) {
         Url forDeletion = urlService.getUrl(id);
-        log.error(forDeletion.getUser().getId().toString() + " Url ID");
-        log.error(authentication.getId() + " Authentification id ");
-        log.error(authentication.getPermissions());
         if (Objects.equals(forDeletion.getUser().getId(), authentication.getId()) || authentication.getRoleName().equals("ROLE_SYSADMIN")) {
             urlService.deleteUrl(id);
             return ResponseEntity.ok((

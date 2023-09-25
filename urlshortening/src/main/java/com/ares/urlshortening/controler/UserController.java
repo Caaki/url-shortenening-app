@@ -81,7 +81,7 @@ public class UserController {
     public ResponseEntity<HttpResponse> saveUser(Authentication authentication){
         UserDTO userDto=userService.getUserById(UserUtils.getAuthenticatedUser(authentication).getId());
         Role role = roleService.getRoleByUserId(userDto.getId());
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",userDto,"role",role,"userEvents",eventService.getEventsByUserId(userDto.getId())))
@@ -97,7 +97,7 @@ public class UserController {
         UserDTO updatedUser=userService.updateUserDetails(user,tokenProvider.getSubject(getToken(request),request));
         publisher.publishEvent(new NewUserEvent(updatedUser.getId(), PROFILE_UPDATE));
         Role role = roleService.getRoleByUserId(updatedUser.getId());
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
@@ -114,7 +114,7 @@ public class UserController {
         userService.updateUserPassword(form,userDTO.getId());
         Role role = roleService.getRoleByUserId(userDTO.getId());
         publisher.publishEvent(new NewUserEvent(userDTO.getId(), PASSWORD_UPDATE));
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .message("Password updated successfully") // hmmmmmmmmm
@@ -130,7 +130,7 @@ public class UserController {
         UserDTO updatedUser = userService.updateUserSettings(form,getAuthenticatedUser(authentication).getId());
         publisher.publishEvent(new NewUserEvent(updatedUser.getId(),ACCOUNT_SETTINGS_UPDATE));
         Role role = roleService.getRoleByUserId(updatedUser.getId());
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
@@ -146,7 +146,7 @@ public class UserController {
         UserDTO updatedUser = userService.toggleMfa(getAuthenticatedUser(authentication).getId());
         publisher.publishEvent(new NewUserEvent(updatedUser.getId(),MFA_UPDATE));
         Role role = roleService.getRoleByUserId(updatedUser.getId());
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",updatedUser,"role",role,"userEvents",eventService.getEventsByUserId(updatedUser.getId())))
@@ -163,7 +163,7 @@ public class UserController {
         userService.updateImage(user,image);
         Role role = roleService.getRoleByUserId(user.getId());
         publisher.publishEvent(new NewUserEvent(user.getId(), PROFILE_PICTURE_UPDATE));
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .data(Map.of("user",userService.getUserById(user.getId()),"role",role,"userEvents",eventService.getEventsByUserId(user.getId())))
@@ -178,7 +178,7 @@ public class UserController {
     public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email){
 
         userService.resetPassword(email);
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .message("Email sent, check your email to reset your password.")
@@ -196,7 +196,7 @@ public class UserController {
     @GetMapping("/verify/password/{key}")
     public ResponseEntity<HttpResponse> verifyPasswordUrl(@PathVariable("key") String key){
         UserDTO userDTO =  userService.verifyPasswordKey(key);
-        return ResponseEntity.created(getUri()).body(
+        return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
                         .message("Please enter a new password.")
@@ -210,7 +210,7 @@ public class UserController {
     @PostMapping("/resetpassword/{key}")
     public ResponseEntity<HttpResponse> renewPassword(@PathVariable("key") String key, @RequestBody ResetPasswordForm form){
             userService.renewPassword(key,form);
-            return ResponseEntity.created(getUri()).body(
+            return ResponseEntity.ok(
                     HttpResponse.builder()
                             .timeStamp(now().toString())
                             .message("Password has been reset")
@@ -285,6 +285,7 @@ public class UserController {
     }
 
 
+
     @RequestMapping("/error")
     public ResponseEntity<HttpResponse> handleError(HttpServletRequest request){
         return new ResponseEntity<>(
@@ -295,6 +296,8 @@ public class UserController {
                         .statusCode(HttpStatus.NOT_FOUND.value())
                         .build(), NOT_FOUND);
     }
+
+
 
     private boolean isHeaderAndTokenValid(HttpServletRequest request) {
         if (request.getHeader(AUTHORIZATION)== null ||
