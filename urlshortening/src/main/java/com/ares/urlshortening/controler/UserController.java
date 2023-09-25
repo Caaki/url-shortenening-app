@@ -310,6 +310,7 @@ public class UserController {
     }
 
 
+
     private UserDTO authenticate(String email, String password) {
         UserDTO user = userService.getUserByEmail(email);
         try{

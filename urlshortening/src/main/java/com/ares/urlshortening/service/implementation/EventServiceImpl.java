@@ -1,5 +1,6 @@
 package com.ares.urlshortening.service.implementation;
 
+import com.ares.urlshortening.domain.UrlEvent;
 import com.ares.urlshortening.domain.UserEvent;
 import com.ares.urlshortening.enumeration.EventType;
 import com.ares.urlshortening.repository.EventRepository;
@@ -30,5 +31,14 @@ public class EventServiceImpl implements EventService {
     public void addUserEvent(String email, EventType eventType, String device, String browser, String ipAddress) {
         eventRepository.addUserEvent(email,eventType,device,browser,ipAddress);
 
+    }
+    @Override
+    public void addVisitLinkEvent(Long userId, EventType eventType, Long urlId, String device, String browser, String ipAddress) {
+        eventRepository.addVisitLinkEvent(userId, eventType,urlId, device,  browser,  ipAddress);
+    }
+
+    @Override
+    public Collection<UrlEvent> getUrlEventsByUserId(Long userId) {
+        return eventRepository.getUrlEventsByUserId(userId);
     }
 }

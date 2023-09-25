@@ -19,7 +19,6 @@ public interface UrlRepository
     Page<Url> findAllByUser(User user, Pageable pageable);
     List<Url> findAllByUser(User user);
     Page<Url> findByRealUrlContaining(String realUrl, Pageable pageable);
-
     Url findByShortUrl(String shortUrl);
 
 }

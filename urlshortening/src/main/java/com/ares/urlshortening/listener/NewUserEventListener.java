@@ -1,5 +1,6 @@
 package com.ares.urlshortening.listener;
 
+import com.ares.urlshortening.enumeration.EventType;
 import com.ares.urlshortening.event.NewUserEvent;
 import com.ares.urlshortening.service.EventService;
 import com.ares.urlshortening.utils.RequestUtils;
@@ -21,8 +22,12 @@ public class NewUserEventListener {
 
     @EventListener
     public void onNewUserEvent(NewUserEvent event){
-        eventService.addUserEvent(
-                event.getUserId(),event.getType(), getDevice(request),getBrowser(request),getIpAddress(request)
-        );
+        if (event.getType() == EventType.URL_VISITED){
+            eventService.addVisitLinkEvent(event.getUserId(), event.getType(),event.getUrlId(), getDevice(request), getBrowser(request),getIpAddress(request));
+        }else {
+            eventService.addUserEvent(
+                    event.getUserId(), event.getType(), getDevice(request), getBrowser(request), getIpAddress(request)
+            );
+        }
     }
 }

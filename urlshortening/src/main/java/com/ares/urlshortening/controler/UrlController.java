@@ -2,10 +2,13 @@ package com.ares.urlshortening.controler;
 
 import com.ares.urlshortening.domain.HttpResponse;
 import com.ares.urlshortening.domain.Url;
+import com.ares.urlshortening.domain.UrlEvent;
 import com.ares.urlshortening.dto.UserDTO;
 import com.ares.urlshortening.dto.dtomapper.UserDTOMapper;
+import com.ares.urlshortening.event.NewUserEvent;
 import com.ares.urlshortening.exceptions.ApiException;
 import com.ares.urlshortening.forms.UrlForm;
+import com.ares.urlshortening.service.EventService;
 import com.ares.urlshortening.service.UrlService;
 import com.ares.urlshortening.utils.UpdateUtils;
 import com.zaxxer.hikari.util.PropertyElf;
@@ -14,9 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +31,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.ares.urlshortening.enumeration.EventType.MFA_UPDATE;
+import static com.ares.urlshortening.enumeration.EventType.URL_VISITED;
 import static com.ares.urlshortening.utils.UpdateUtils.*;
 import static java.time.LocalDateTime.now;
 
@@ -36,6 +43,8 @@ import static java.time.LocalDateTime.now;
 public class UrlController {
 
     private final UrlService urlService;
+    private final EventService eventService;
+    private final ApplicationEventPublisher publisher;
 
     @GetMapping("/list")
     public ResponseEntity<HttpResponse> getUrls(
@@ -105,6 +114,7 @@ public class UrlController {
         if (url == null){
             throw new ApiException("Invalid Url!");
         }else{
+            publisher.publishEvent(new NewUserEvent(URL_VISITED, url.getUser().getId(),url.getId()));
             return ResponseEntity.ok((
                     HttpResponse.builder()
                             .timeStamp(now().toString())
@@ -172,6 +182,21 @@ public class UrlController {
             throw new ApiException("You are not authorized to make this change!");
         }
 
+    }
+
+    @GetMapping("/visits")
+    public ResponseEntity<HttpResponse> userVisits(@AuthenticationPrincipal UserDTO auth){
+
+        Collection<UrlEvent> events = eventService.getUrlEventsByUserId(auth.getId());
+        return ResponseEntity.ok((
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message("Urls retrieved")
+                        .data(Map.of("urlEvents", events))
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+                ));
     }
 
     @DeleteMapping("/delete/{id}")

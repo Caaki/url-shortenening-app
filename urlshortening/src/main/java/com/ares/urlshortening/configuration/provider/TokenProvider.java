@@ -70,7 +70,6 @@ public String createRefreshToken(UserPrincipal userPrincipal){
             Algorithm algorithm = Algorithm.HMAC512(secret);
             verifier = JWT.require(algorithm).withIssuer(URL_SHORTENING).build();
         }catch (JWTVerificationException e){
-            log.error(TOKEN_CANNOT_BE_VERIFIED);
             throw new JWTVerificationException(TOKEN_CANNOT_BE_VERIFIED);
         }
         return verifier;
@@ -107,15 +106,12 @@ public String createRefreshToken(UserPrincipal userPrincipal){
         try{
             return Long.valueOf(getJwtVerifier().verify(token).getSubject());
         }catch (TokenExpiredException e){
-            log.error("Token expiered!");
             request.setAttribute("expiredMessage",e.getMessage());
             throw e;
         }catch (InvalidClaimException e){
-            log.error("Error in getSubject() at TokenProvider");
             request.setAttribute("invalidClaim",e.getMessage());
             throw e;
         }catch (Exception e){
-            log.error("Error in getSubject() at TokenProvider");
             throw e;
         }
     }
