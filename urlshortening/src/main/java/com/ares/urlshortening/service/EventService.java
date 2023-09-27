@@ -13,5 +13,6 @@ public interface EventService {
     void addUserEvent(String email, EventType eventType, String device, String browser, String ipAddress);
     void addVisitLinkEvent(Long userId, EventType eventType,Long urlId, String device, String browser, String ipAddress);
     Collection<UrlEvent>getUrlEventsByUserId(Long userId);
+    Collection<UrlEvent>getUrlEventsByUrlId(Long urlId);
 
 }

@@ -12,6 +12,7 @@ import com.ares.urlshortening.service.EventService;
 import com.ares.urlshortening.service.UrlService;
 import com.ares.urlshortening.utils.UpdateUtils;
 import com.zaxxer.hikari.util.PropertyElf;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -64,22 +65,21 @@ public class UrlController {
 
     @PostMapping("/create")
     public ResponseEntity<HttpResponse> createUrl(
-            @AuthenticationPrincipal UserDTO authentication, @RequestBody UrlForm url) {
-
+            @AuthenticationPrincipal UserDTO authentication, @RequestBody @Valid UrlForm url) {
         Url newUrl =  Url.builder()
                 .realUrl(url.getRealUrl())
                 .shortUrl(url.getShortUrl())
                 .enabled(url.getEnabled())
                 .user(UserDTOMapper.fromDTO(authentication))
                 .createdAt(LocalDateTime.now())
+                .alias(url.getAlias())
                 .build();
-
         return ResponseEntity.created(URI.create(""))
                 .body(
                         HttpResponse.builder()
                                 .timeStamp(now().toString())
                                 .message("Url created")
-                                .data(Map.of("user", authentication, "urls", urlService.createUrl(newUrl)))
+                                .data(Map.of("user", authentication, "url", urlService.createUrl(newUrl)))
                                 .status(HttpStatus.CREATED)
                                 .statusCode(HttpStatus.CREATED.value())
                                 .build()
@@ -90,17 +90,20 @@ public class UrlController {
     public ResponseEntity<HttpResponse> getUrl(
             @AuthenticationPrincipal UserDTO authentication,
             @PathVariable("id") Long id) {
+
+        Collection<UrlEvent> events = eventService.getUrlEventsByUrlId(id);
         Url url = urlService.getUrl(id);
         if (Objects.equals(authentication.getId(), url.getUser().getId()) || authentication.getRoleName().equals("ROLE_SYSADMIN")) {
             return ResponseEntity.ok((
                     HttpResponse.builder()
                             .timeStamp(now().toString())
                             .message("Urls retrieved")
-                            .data(Map.of("user", authentication, "url", url))
+                            .data(Map.of("user", authentication, "url", url,"urlEvents", events))
                             .status(HttpStatus.OK)
                             .statusCode(HttpStatus.OK.value())
                             .build()
             ));
+
         } else {
             throw new ApiException("This url doesnt belong to you, login as the owner to make adjustments!");
         }
@@ -109,7 +112,6 @@ public class UrlController {
     @GetMapping("/redirect/{link}")
     public ResponseEntity<HttpResponse> redirectLink(@PathVariable("link") String link) throws InterruptedException {
         Url url = urlService.redirectUrl(link);
-        TimeUnit.SECONDS.sleep(3);
         log.error("url.toString()");
         if (url == null){
             throw new ApiException("Invalid Url!");
@@ -164,7 +166,8 @@ public class UrlController {
     public ResponseEntity<HttpResponse> update(
             @AuthenticationPrincipal UserDTO authentication,
             @RequestBody Url url) {
-
+        Collection<UrlEvent> events = eventService.getUrlEventsByUrlId(url.getId());
+        log.error(url.getShortUrl());
         Url existing = urlService.getUrl(url.getId());
         copyNonNullProperties(url, existing);
         if (Objects.equals(authentication.getId(), existing.getUser().getId())){
@@ -173,7 +176,7 @@ public class UrlController {
                             .timeStamp(now().toString())
                             .message("Urls retrieved")
                             .data(Map.of("user", authentication, "url",
-                                    urlService.updateUrl(existing)))
+                                    urlService.updateUrl(existing),"urlEvents", events))
                             .status(HttpStatus.OK)
                             .statusCode(HttpStatus.OK.value())
                             .build()
@@ -197,6 +200,25 @@ public class UrlController {
                         .statusCode(HttpStatus.OK.value())
                         .build()
                 ));
+    }
+
+    @GetMapping("/visits/{id}")
+    public ResponseEntity<HttpResponse> urlVisitsByUrlId(@AuthenticationPrincipal UserDTO auth,  @PathVariable("id") Long id){
+
+        Url url = urlService.getUrl(id);
+        if (Objects.equals(url.getUser().getId(), auth.getId()) || auth.getRoleName().equals("ROLE_SYSADMIN")){
+            return ResponseEntity.ok((
+                    HttpResponse.builder()
+                            .timeStamp(now().toString())
+                            .message("Url Events retrieved")
+                            .data(Map.of("user", auth,"urlEvents",eventService.getUrlEventsByUrlId(id)))
+                            .status(HttpStatus.OK)
+                            .statusCode(HttpStatus.OK.value())
+                            .build()
+                    ) );
+        }else{
+            throw new ApiException("You are not authorized to view this content!");
+        }
     }
 
     @DeleteMapping("/delete/{id}")

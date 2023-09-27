@@ -41,4 +41,9 @@ public class EventServiceImpl implements EventService {
     public Collection<UrlEvent> getUrlEventsByUserId(Long userId) {
         return eventRepository.getUrlEventsByUserId(userId);
     }
+
+    @Override
+    public Collection<UrlEvent> getUrlEventsByUrlId(Long urlId) {
+        return eventRepository.getUrlEventsByUrlId(urlId);
+    }
 }

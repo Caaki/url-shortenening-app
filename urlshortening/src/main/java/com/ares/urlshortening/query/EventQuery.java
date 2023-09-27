@@ -42,20 +42,6 @@ public class EventQuery {
                     ":device," +
                     ":browser)";
 
-//    @Override
-//    public UrlEvent mapRow(ResultSet rs, int rowNum) throws SQLException {
-//        return UrlEvent.builder()
-//                .id(rs.getLong("id"))
-//                .urlId(rs.getLong("url_id"))
-//                .userId(rs.getLong("user_id"))
-//                .browser(rs.getString("browser"))
-//                .device(rs.getString("device"))
-//                .description(rs.getString("description"))
-//                .ipAddress(rs.getString("ip_address"))
-//                .createdAt(rs.getTimestamp("created_at").toLocalDateTime())
-//                .type(rs.getString("type"))
-//                .build();
-//    }
 
 
     public static final String SELECT_URL_EVENTS_BY_USER_ID_QUERY =
@@ -67,5 +53,14 @@ public class EventQuery {
                     "JOIN users u ON u.id=ue.user_id " +
                     "WHERE u.id = :userId";
 
+
+    public static final String SELECT_URL_EVENTS_BY_URL_ID_QUERY =
+            "SELECT url.alias,url.real_url, url.short_url, url.id as url_id, " +
+                    "ue.device, ue.browser, ue.ip_address,ue.id as id, ue.created_at, " +
+                    "u.id as user_id " +
+                    "FROM urls url  " +
+                    "JOIN UrlEvents ue ON url.id = ue.url_id  " +
+                    "JOIN users u ON u.id=ue.user_id " +
+                    "WHERE url.id = :urlId";
 
 }

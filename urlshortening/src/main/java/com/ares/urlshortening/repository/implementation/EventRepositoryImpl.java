@@ -84,5 +84,17 @@ public class EventRepositoryImpl implements EventRepository {
         }
     }
 
+    @Override
+    public Collection<UrlEvent> getUrlEventsByUrlId(Long urlId) {
+        try{
+            return jdbc.query(SELECT_URL_EVENTS_BY_URL_ID_QUERY,Map.of("urlId",urlId),new UrlEventRowMapper());
+        }catch (EmptyResultDataAccessException e) {
+            throw new ApiException("No events on this link!");
+        } catch (Exception e){
+            log.error(e.getMessage());
+            throw new ApiException("There was an error with the urls");
+        }
+    }
+
 
 }
